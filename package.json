@@ -1,0 +1,12 @@
+{
+  "name": "weight-loss-race",
+  "version": "1.0.0",
+  "description": "瘦者为王 - 家庭减肥大赛实时看板",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
