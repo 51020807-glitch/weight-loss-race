@@ -29,11 +29,8 @@ body {
 .progress-section { max-width: 900px; margin: 20px auto 10px; padding: 0 16px; }
 .progress-bar-wrap { background: #fff; border-radius: 16px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
 .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; color: #666; }
-.progress-bar { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.progress-bar { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffa500, #ffd93d); border-radius: 6px; transition: width 0.5s ease; }
-.period-labels { display: flex; justify-content: space-between; font-size: 0.78em; color: #999; }
-.period-label { text-align: center; flex: 1; }
-.period-label.active { color: #16a34a; font-weight: 700; }
 .main-container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .teams-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
 @media (max-width: 768px) { .teams-row { grid-template-columns: 1fr; } .rankings-grid { grid-template-columns: 1fr !important; } }
@@ -137,7 +134,6 @@ body {
   <div class="slogan">减重争先 · 健康为先</div>
   <div class="status-bar">
     <div class="status-chip"><span class="status-dot" id="connDot"></span><span id="connText">连接中...</span></div>
-    <div class="status-chip">👤 <span id="currentUserName">无需选择身份</span></div>
   </div>
 </div>
 
@@ -148,7 +144,6 @@ body {
       <span>当前第 <strong id="currentWeek">-</strong> 周 · 剩余 <strong id="remainingDays">-</strong> 天</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-    <div class="period-labels" id="periodLabels"></div>
   </div>
 </div>
 
@@ -418,10 +413,6 @@ async function pollUpdates() {
   }
 }
 
-function updateCurrentUserUI() {
-  document.getElementById('currentUserName').textContent = '记录时自选成员';
-}
-
 // ==================== 渲染 ====================
 function renderAll() {
   renderTeams();
@@ -430,7 +421,6 @@ function renderAll() {
   renderChart();
   renderTable();
   renderRecordSelect();
-  updateCurrentUserUI();
 }
 
 // ==================== 战队卡片（纯展示，不可编辑） ====================
@@ -490,20 +480,6 @@ function renderProgress() {
   document.getElementById('currentWeek').textContent = Math.ceil(elapsed / 7);
   document.getElementById('remainingDays').textContent = Math.max(0, Math.ceil(totalDays - elapsed));
   document.getElementById('progressFill').style.width = pct + '%';
-
-  var periodDays = totalDays / 3;
-  var periods = [];
-  for (var i = 0; i < 3; i++) {
-    var pStart = new Date(start.getTime() + i * periodDays * 86400000);
-    var pEnd = new Date(start.getTime() + (i + 1) * periodDays * 86400000 - 86400000);
-    if (i === 2) pEnd.setTime(end.getTime());
-    var active = elapsed >= i * periodDays && (i < 2 ? elapsed < (i + 1) * periodDays : elapsed <= totalDays);
-    var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-    periods.push({ label: '周期' + (i + 1), sub: months[pStart.getMonth()] + '-' + months[pEnd.getMonth()], active: active });
-  }
-  document.getElementById('periodLabels').innerHTML = periods.map(function(p) {
-    return '<div class="period-label ' + (p.active ? 'active' : '') + '">' + p.label + '<br>' + p.sub + '</div>';
-  }).join('');
 }
 
 // ==================== 排行榜 ====================
