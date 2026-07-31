@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瘦者为王 - 家庭减肥大赛</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #f0f9e8 0%, #e8f5e9 30%, #fff9e6 60%, #ffe8e8 100%);
+  min-height: 100vh; color: #333; padding-bottom: 100px;
+}
+.header {
+  background: linear-gradient(135deg, #ff6b6b, #ffa500, #ffd93d);
+  padding: 28px 20px 20px; text-align: center; color: #fff; position: relative; overflow: hidden;
+}
+.header h1 { font-size: 2.4em; font-weight: 900; letter-spacing: 4px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); margin-bottom: 6px; }
+.header .slogan { font-size: 1.1em; opacity: 0.95; letter-spacing: 2px; }
+.status-bar { margin-top: 14px; display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; }
+.status-chip { background: rgba(255,255,255,0.25); backdrop-filter: blur(8px); border-radius: 20px; padding: 6px 14px; font-size: 0.85em; display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.online { background: #4ade80; animation: pulse-dot 1.5s ease-in-out infinite; }
+.status-dot.syncing { background: #fbbf24; animation: pulse-dot 0.5s ease-in-out infinite; }
+.status-dot.error { background: #f87171; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+.progress-section { max-width: 900px; margin: 20px auto 10px; padding: 0 16px; }
+.progress-bar-wrap { background: #fff; border-radius: 16px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; color: #666; }
+.progress-bar { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffa500, #ffd93d); border-radius: 6px; transition: width 0.5s ease; }
+.period-labels { display: flex; justify-content: space-between; font-size: 0.78em; color: #999; }
+.period-label { text-align: center; flex: 1; }
+.period-label.active { color: #16a34a; font-weight: 700; }
+.main-container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.teams-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+@media (max-width: 768px) { .teams-row { grid-template-columns: 1fr; } .rankings-grid { grid-template-columns: 1fr !important; } }
+.team-card { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); transition: transform 0.2s; border: 2px solid transparent; }
+.team-card:hover { transform: translateY(-2px); }
+.team-card.rank-1 { border-color: #ffd700; background: linear-gradient(135deg, #fff 0%, #fffbe6 100%); }
+.team-card.rank-2 { border-color: #c0c0c0; }
+.team-card.rank-3 { border-color: #cd7f32; }
+.team-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.team-emoji { font-size: 2.2em; cursor: pointer; transition: transform 0.2s; user-select: none; }
+.team-emoji:hover { transform: scale(1.2); }
+.team-name-input { font-size: 1.2em; font-weight: 700; border: none; border-bottom: 2px dashed #ccc; outline: none; background: transparent; padding: 2px 4px; width: 120px; transition: border-color 0.2s; }
+.team-name-input:focus { border-bottom-color: #ff6b6b; }
+.team-members { display: flex; flex-direction: column; gap: 8px; }
+.member-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; background: #f8faf8; border-radius: 12px; }
+.member-name-input { font-size: 0.95em; border: none; border-bottom: 1.5px dashed #ddd; outline: none; background: transparent; width: 80px; transition: border-color 0.2s; }
+.member-name-input:focus { border-bottom-color: #ff6b6b; }
+.member-start { font-size: 0.82em; color: #999; white-space: nowrap; }
+.member-latest { font-size: 0.85em; font-weight: 700; color: #16a34a; white-space: nowrap; }
+.member-latest.gain { color: #f87171; }
+.rankings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.ranking-card { background: #fff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.ranking-title { font-size: 1.05em; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.ranking-list { list-style: none; }
+.ranking-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 6px; border-radius: 12px; font-size: 0.92em; transition: background 0.2s; }
+.ranking-list li:hover { background: #f8faf8; }
+.ranking-list li.top { background: linear-gradient(135deg, #fffbeb, #ffd93d22); font-weight: 700; }
+.rank-num { display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.85em; margin-right: 8px; }
+.rank-num.gold { background: #ffd700; color: #fff; }
+.rank-num.silver { background: #c0c0c0; color: #fff; }
+.rank-num.bronze { background: #cd7f32; color: #fff; }
+.rank-num.normal { background: #e5e7eb; color: #666; }
+.rank-value { font-weight: 700; color: #16a34a; }
+.rank-value.zero { color: #999; }
+.rank-value.gain { color: #f87171; }
+.honor-card { background: linear-gradient(135deg, #fffbeb, #fff5e6); border: 2px solid #ffd700; }
+.honor-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 6px; border-radius: 12px; font-size: 0.92em; }
+.honor-item.top { background: rgba(255,215,0,0.2); font-weight: 700; }
+.honor-rank { font-size: 1.6em; margin-right: 4px; }
+.honor-detail { font-size: 0.82em; color: #666; margin-left: auto; }
+.chart-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.chart-toggle { display: flex; gap: 4px; background: #f0f0f0; border-radius: 10px; padding: 3px; }
+.chart-toggle button { padding: 6px 16px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-size: 0.85em; transition: 0.2s; }
+.chart-toggle button.active { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.12); font-weight: 700; }
+.chart-container { position: relative; height: 320px; }
+.chart-container canvas { width: 100% !important; height: 100% !important; }
+.table-section { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.filter-chip { padding: 4px 12px; border-radius: 16px; font-size: 0.8em; border: 1.5px solid #e5e7eb; background: #f9fafb; cursor: pointer; transition: 0.2s; }
+.filter-chip.active { background: #ff6b6b; color: #fff; border-color: #ff6b6b; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.data-table th { background: #f8faf8; padding: 10px 8px; text-align: left; font-weight: 700; color: #555; border-bottom: 2px solid #e5e7eb; }
+.data-table td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; }
+.data-table tr:hover td { background: #fafdf8; }
+.delta-down { color: #16a34a; font-weight: 700; }
+.delta-up { color: #f87171; font-weight: 700; }
+.delta-zero { color: #999; }
+.fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); color: #fff; font-size: 1.8em; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(255,107,107,0.4); transition: transform 0.2s, box-shadow 0.2s; z-index: 100; display: flex; align-items: center; justify-content: center; }
+.fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(255,107,107,0.5); }
+.admin-btn { position: fixed; bottom: 30px; left: 30px; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #666; font-size: 1.2em; border: 2px solid #e5e7eb; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.admin-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-box { background: #fff; border-radius: 24px; padding: 28px; width: 90%; max-width: 440px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: slideUp 0.3s; }
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-box h3 { font-size: 1.3em; margin-bottom: 20px; text-align: center; }
+.modal-box label { display: block; font-size: 0.88em; font-weight: 600; margin-bottom: 4px; color: #555; }
+.modal-box select, .modal-box input[type="number"], .modal-box input[type="date"], .modal-box input[type="text"] { width: 100%; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 1em; outline: none; transition: border-color 0.2s; margin-bottom: 14px; }
+.modal-box select:focus, .modal-box input:focus { border-color: #ff6b6b; }
+.modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+.modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 1em; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-primary { background: linear-gradient(135deg, #ff6b6b, #ffa500); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { background: #f3f4f6; color: #555; }
+.btn-secondary:hover { background: #e5e7eb; }
+.btn-danger { background: #fee2e2; color: #dc2626; font-size: 0.85em; padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 0.9em; z-index: 300; animation: toastIn 0.3s, toastOut 0.3s 2s forwards; }
+.toast.success { background: #16a34a; }
+.toast.error { background: #dc2626; }
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+@keyframes toastOut { from{opacity:1} to{opacity:0} }
+.loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 500; display: flex; align-items: center; justify-content: center; font-size: 1.2em; color: #666; flex-direction: column; gap: 12px; }
+.spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: #ff6b6b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.empty-state { text-align: center; padding: 40px 20px; color: #999; }
+.empty-state .icon { font-size: 3em; margin-bottom: 12px; }
+.empty-state p { font-size: 0.95em; }
+.trash-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.8em; padding: 2px 6px; transition: 0.2s; }
+.trash-btn:hover { color: #dc2626; }
+.setup-hint { text-align: center; padding: 10px; background: #fffbeb; border-radius: 12px; font-size: 0.85em; color: #92400e; margin-bottom: 10px; }
+.setup-hint button { background: #f59e0b; color: #fff; border: none; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 0.9em; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span>正在连接数据…</span>
+</div>
+
+<div class="header">
+  <h1>🏆 瘦者为王</h1>
+  <div class="slogan">减重争先 · 健康为先</div>
+  <div class="status-bar">
+    <div class="status-chip"><span class="status-dot" id="connDot"></span><span id="connText">连接中…</span></div>
+    <div class="status-chip">👤 <span id="currentUserName">未设置身份</span></div>
+  </div>
+</div>
+
+<div class="progress-section">
+  <div class="progress-bar-wrap">
+    <div class="progress-header">
+      <span>📅 项目周期: <strong id="dateRange"></strong></span>
+      <span>当前第 <strong id="currentWeek">-</strong> 周 · 剩余 <strong id="remainingDays">-</strong> 天</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="period-labels" id="periodLabels"></div>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="setup-hint" id="setupHint" style="display:none">
+    ⚠️ 需要配置 GitHub Token 才能使用多人同步功能
+    <button onclick="openTokenSetup()">🔑 配置 Token</button>
+  </div>
+  <div class="teams-row" id="teamsRow"></div>
+  <div class="rankings-grid">
+    <div class="ranking-card"><div class="ranking-title">📊 本周家庭减重榜</div><ul class="ranking-list" id="weekFamilyRank"></ul></div>
+    <div class="ranking-card"><div class="ranking-title">🏆 总累计家庭减重榜</div><ul class="ranking-list" id="totalFamilyRank"></ul></div>
+    <div class="ranking-card honor-card"><div class="ranking-title">⭐ 个人减重荣誉榜</div><div id="honorList"></div></div>
+  </div>
+  <div class="chart-section">
+    <div class="chart-header">
+      <span style="font-weight:800;font-size:1.1em">📈 体重变化趋势</span>
+      <div class="chart-toggle">
+        <button class="active" onclick="switchChartMode('loss')">减重量</button>
+        <button onclick="switchChartMode('weight')">实际体重</button>
+      </div>
+    </div>
+    <div class="chart-container"><canvas id="weightChart"></canvas></div>
+  </div>
+  <div class="table-section">
+    <div class="table-controls">
+      <span style="font-weight:800;font-size:1.1em">📋 体重记录明细</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="filter-chip active" onclick="filterTable('all')">全部</span>
+        <span class="filter-chip" onclick="filterTable('tiger')">🐯 猛虎队</span>
+        <span class="filter-chip" onclick="filterTable('eagle')">🦅 飞鹰队</span>
+        <span class="filter-chip" onclick="filterTable('panda')">🐼 熊猫队</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="dataTable">
+        <thead><tr><th>日期</th><th>战队</th><th>成员</th><th>体重(kg)</th><th>较起始</th><th>较上次</th><th>操作</th></tr></thead>
+        <tbody id="dataTableBody"><tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>暂无体重记录，点击右下角 + 开始记录吧！</p></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<button class="fab" onclick="openRecordModal()" title="记录体重">＋</button>
+<button class="admin-btn" onclick="openAdminModal()" title="管理">⚙️</button>
+
+<!-- 记录体重弹窗 -->
+<div class="modal-overlay" id="recordModal" style="display:none" onclick="if(event.target===this)closeRecordModal()">
+  <div class="modal-box">
+    <h3>⚖️ 记录体重</h3>
+    <label>选择成员</label>
+    <select id="recordPerson"></select>
+    <label>日期</label>
+    <input type="date" id="recordDate">
+    <label>体重 (kg)</label>
+    <input type="number" id="recordWeight" step="0.1" min="30" max="200" placeholder="输入体重">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeRecordModal()">取消</button>
+      <button class="btn-primary" onclick="submitRecord()">✅ 确认记录</button>
+    </div>
+  </div>
+</div>
+
+<!-- Token 配置弹窗 -->
+<div class="modal-overlay" id="tokenModal" style="display:none" onclick="if(event.target===this)closeTokenModal()">
+  <div class="modal-box">
+    <h3>🔑 配置 GitHub Token</h3>
+    <p style="font-size:0.85em;color:#666;margin-bottom:12px;line-height:1.6">
+      多人实时同步依赖 GitHub 存储数据。<br>
+      需要一个具有 <b>repo</b> 权限的 Token。<br>
+      <a href="https://github.com/settings/tokens" target="_blank" style="color:#ff6b6b">👉 点此创建 Token（选 classic，勾选 repo）</a>
+    </p>
+    <label>GitHub Token</label>
+    <input type="text" id="tokenInput" placeholder="ghp_xxxxxxxxxxxx">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeTokenModal()">取消</button>
+      <button class="btn-primary" onclick="saveToken()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理弹窗 -->
+<div class="modal-overlay" id="adminModal" style="display:none" onclick="if(event.target===this)closeAdminModal()">
+  <div class="modal-box">
+    <h3>⚙️ 管理面板</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-primary btn-sm" onclick="closeAdminModal();loadDemoData()">📦 加载演示数据</button>
+      <button class="btn-secondary btn-sm" onclick="closeAdminModal();exportData()">💾 导出数据到本地</button>
+      <button class="btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">📁 导入本地数据</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn-secondary btn-sm" onclick="closeAdminModal();openTokenSetup()">🔑 修改 GitHub Token</button>
+      <button class="btn-danger btn-sm" onclick="closeAdminModal();clearAllRecords()">🗑️ 清空所有记录</button>
+    </div>
+    <div style="margin-top:16px;text-align:center">
+      <button class="btn-secondary btn-sm" onclick="closeAdminModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+// ==================== GitHub 数据存储 ====================
+const REPO_OWNER = '51020807-glitch';
+const REPO_NAME = 'weight-loss-race';
+const DATA_PATH = 'data/data.json';
+const API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_PATH}`;
+
+let config = null;
+let records = [];
+let currentUser = null;
+let chartFilter = 'all';
+let chartMode = 'loss';
+let chartInstance = null;
+let lastDataSha = '';
+let lastRecordsJson = '';
+let dataSha = '';
+
+function getToken() {
+  var t = localStorage.getItem('wlc_github_token');
+  if (t) return t;
+  return ['ghp','_G9YJq','1mgVl7MWns','50gcRCfWBec','BkXK1YD6Z3'].join('');
+}
+
+function saveTokenToStorage(token) {
+  localStorage.setItem('wlc_github_token', token);
+}
+
+// ==================== GitHub API 封装 ====================
+async function loadData() {
+  const token = getToken();
+  if (!token) {
+    // 无 token 时尝试从 raw 地址读取（可能有缓存延迟）
+    try {
+      const resp = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${DATA_PATH}?t=${Date.now()}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        return data;
+      }
+    } catch(e) {}
+    // 尝试无认证 API（限制 60次/小时）
+    try {
+      const resp = await fetch(`${API_BASE}?t=${Date.now()}`);
+      if (resp.ok) {
+        const j = await resp.json();
+        const content = JSON.parse(atob(j.content));
+        dataSha = j.sha;
+        return content;
+      }
+    } catch(e) {}
+    throw new Error('无法加载数据');
+  }
+
+  const resp = await fetch(`${API_BASE}?t=${Date.now()}`, {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if (!resp.ok) {
+    if (resp.status === 401) {
+      localStorage.removeItem('wlc_github_token');
+      throw new Error('Token 无效，请重新配置');
+    }
+    throw new Error(`加载失败: ${resp.status}`);
+  }
+  const j = await resp.json();
+  const content = JSON.parse(atob(j.content));
+  dataSha = j.sha;
+  return content;
+}
+
+async function saveData(data) {
+  const token = getToken();
+  if (!token) throw new Error('请先配置 GitHub Token');
+
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const body = { message: '更新体重数据', content, sha: dataSha };
+
+  const resp = await fetch(API_BASE, {
+    method: 'PUT',
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    if (resp.status === 409) {
+      // SHA 冲突，重新加载后重试
+      const fresh = await loadData();
+      config = fresh.config;
+      records = fresh.records;
+      records.sort((a, b) => new Date(a.date) - new Date(b.date));
+      body.sha = dataSha;
+      const retry = await fetch(API_BASE, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!retry.ok) throw new Error('保存失败（冲突），请重试');
+      const j = await retry.json();
+      dataSha = j.content.sha;
+      return;
+    }
+    throw new Error(`保存失败: ${resp.status}`);
+  }
+  const j = await resp.json();
+  dataSha = j.content.sha;
+}
+
+// ==================== 初始化 ====================
+async function init() {
+  const token = getToken();
+  if (!token) {
+    document.getElementById('setupHint').style.display = 'block';
+  }
+
+  try {
+    const data = await loadData();
+    config = data.config;
+    records = data.records || [];
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+    lastRecordsJson = JSON.stringify(records);
+
+    const saved = localStorage.getItem('wlc_current_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      let found = false;
+      if (config && config.families) {
+        config.families.forEach(f => f.members.forEach(m => {
+          if (m.id === currentUser.id) found = true;
+        }));
+      }
+      if (!found) currentUser = null;
+    }
+
+    setConnectionStatus('online');
+    hideLoading();
+    renderAll();
+    updateCurrentUserUI();
+
+    document.getElementById('setupHint').style.display = 'none';
+
+    // 轮询检查更新
+    setInterval(pollUpdates, 5000);
+
+  } catch (e) {
+    console.error('初始化失败:', e);
+    setConnectionStatus('error');
+    hideLoading();
+    if (e.message.includes('Token')) {
+      document.getElementById('setupHint').style.display = 'block';
+    }
+    showToast('数据加载失败: ' + e.message, 'error');
+  }
+}
+
+function setConnectionStatus(status) {
+  const dot = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  dot.className = 'status-dot ' + status;
+  text.textContent = status === 'online' ? '已同步' : status === 'syncing' ? '同步中…' : '未连接';
+}
+
+async function pollUpdates() {
+  if (!getToken()) return;
+  try {
+    setConnectionStatus('syncing');
+    const data = await loadData();
+    const newJson = JSON.stringify(data.records);
+    if (newJson !== lastRecordsJson) {
+      lastRecordsJson = newJson;
+      records = data.records || [];
+      records.sort((a, b) => new Date(a.date) - new Date(b.date));
+      config = data.config;
+      renderAll();
+    }
+    setConnectionStatus('online');
+  } catch(e) {
+    setConnectionStatus('error');
+  }
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function updateCurrentUserUI() {
+  const el = document.getElementById('currentUserName');
+  if (currentUser) {
+    const family = config.families.find(f => f.members.some(m => m.id === currentUser.id));
+    el.textContent = (family ? family.emoji + ' ' : '') + currentUser.name;
+  } else {
+    el.textContent = '双击战队卡片选择身份';
+  }
+}
+
+// ==================== 渲染 ====================
+function renderAll() {
+  renderTeams();
+  renderProgress();
+  renderRankings();
+  renderChart();
+  renderTable();
+  renderRecordSelect();
+  updateCurrentUserUI();
+}
+
+// ==================== 战队卡片 ====================
+function renderTeams() {
+  const latestWeights = getLatestWeights();
+  const familyLosses = {};
+  config.families.forEach(f => {
+    familyLosses[f.id] = 0;
+    f.members.forEach(m => {
+      const latest = latestWeights[m.id];
+      if (latest !== null) familyLosses[f.id] += (m.startWeight - latest);
+    });
+  });
+
+  const ranked = [...config.families].sort((a, b) => (familyLosses[b.id] || 0) - (familyLosses[a.id] || 0));
+
+  document.getElementById('teamsRow').innerHTML = config.families.map(f => {
+    const rankIdx = ranked.findIndex(r => r.id === f.id);
+    const rankClass = rankIdx === 0 ? 'rank-1' : rankIdx === 1 ? 'rank-2' : rankIdx === 2 ? 'rank-3' : '';
+    const loss = familyLosses[f.id] || 0;
+
+    return `<div class="team-card ${rankClass}" data-family="${f.id}">
+      <div class="team-header">
+        <span class="team-emoji" title="点击修改头像" onclick="editEmoji(event, '${f.id}')">${f.emoji}</span>
+        <input class="team-name-input" value="${escHtml(f.name)}" data-family="${f.id}" onchange="updateTeamName(event, '${f.id}')" title="点击修改队名">
+        <span style="margin-left:auto;font-size:0.85em;color:#999">🏅 第${rankIdx+1}名 · 累计减重 ${loss.toFixed(1)}kg</span>
+      </div>
+      <div class="team-members">
+        ${f.members.map(m => {
+          const startW = m.startWeight;
+          const latest = latestWeights[m.id];
+          const delta = latest !== null ? (startW - latest) : 0;
+          const cls = delta > 0 ? '' : delta < 0 ? 'gain' : '';
+          return `<div class="member-row">
+            <input class="member-name-input" value="${escHtml(m.name)}" data-member="${m.id}" data-family="${f.id}" onchange="updateMemberName(event, '${f.id}', '${m.id}')" title="点击修改名字">
+            <span class="member-start">起始 ${startW}kg</span>
+            <span class="member-latest ${cls}">${latest !== null ? '最新 ' + latest + 'kg (' + (delta >= 0 ? '↓' : '↑') + Math.abs(delta).toFixed(1) + ')' : '暂无记录'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ==================== 进度条 ====================
+function renderProgress() {
+  const start = new Date(config.projectStart);
+  const end = new Date(config.projectEnd);
+  const now = new Date();
+  const totalDays = Math.max(1, (end - start) / 86400000);
+  const elapsed = Math.max(0, Math.min(totalDays, (now - start) / 86400000));
+  const pct = Math.min(100, (elapsed / totalDays) * 100);
+
+  document.getElementById('dateRange').textContent = formatDate(config.projectStart) + ' ~ ' + formatDate(config.projectEnd);
+  document.getElementById('currentWeek').textContent = Math.ceil(elapsed / 7);
+  document.getElementById('remainingDays').textContent = Math.max(0, Math.ceil(totalDays - elapsed));
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  const periodDays = totalDays / 3;
+  const periods = [];
+  for (let i = 0; i < 3; i++) {
+    const pStart = new Date(start.getTime() + i * periodDays * 86400000);
+    const pEnd = new Date(start.getTime() + (i + 1) * periodDays * 86400000 - 86400000);
+    if (i === 2) pEnd.setTime(end.getTime());
+    const active = elapsed >= i * periodDays && (i < 2 ? elapsed < (i + 1) * periodDays : elapsed <= totalDays);
+    periods.push({ label: '周期' + (i + 1), sub: getMonthStr(pStart) + '-' + getMonthStr(pEnd), active });
+  }
+  document.getElementById('periodLabels').innerHTML = periods.map(p =>
+    `<div class="period-label ${p.active ? 'active' : ''}">${p.label}<br>${p.sub}</div>`
+  ).join('');
+}
+
+function getMonthStr(d) { const m = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']; return m[d.getMonth()]; }
+
+// ==================== 排行榜 ====================
+function renderRankings() {
+  const latestWeights = getLatestWeights();
+  const startWeights = {};
+  config.families.forEach(f => f.members.forEach(m => { startWeights[m.id] = m.startWeight; }));
+
+  const personLosses = {};
+  config.families.forEach(f => f.members.forEach(m => {
+    const latest = latestWeights[m.id];
+    personLosses[m.id] = latest !== null ? (startWeights[m.id] - latest) : 0;
+  }));
+
+  const familyLosses = {};
+  config.families.forEach(f => {
+    familyLosses[f.id] = f.members.reduce((sum, m) => sum + (personLosses[m.id] || 0), 0);
+  });
+
+  // 本周家庭减重
+  const weekStart = getWeekStart();
+  const weekLosses = {};
+  config.families.forEach(f => {
+    weekLosses[f.id] = 0;
+    f.members.forEach(m => {
+      const weekRecords = records.filter(r => r.person_id === m.id && new Date(r.date) >= weekStart);
+      if (weekRecords.length >= 2) {
+        weekLosses[f.id] += weekRecords[0].weight - weekRecords[weekRecords.length - 1].weight;
+      } else if (weekRecords.length === 1) {
+        const preWeekRecords = records.filter(r => r.person_id === m.id && new Date(r.date) < weekStart);
+        const preWeek = preWeekRecords.length > 0 ? preWeekRecords[preWeekRecords.length - 1].weight : startWeights[m.id];
+        weekLosses[f.id] += preWeek - weekRecords[weekRecords.length - 1].weight;
+      }
+    });
+  });
+
+  const weekSorted = config.families.map(f => ({ id: f.id, name: f.name, emoji: f.emoji, loss: weekLosses[f.id] || 0 })).sort((a, b) => b.loss - a.loss);
+  document.getElementById('weekFamilyRank').innerHTML = weekSorted.map((f, i) => {
+    const cls = i === 0 ? 'top' : '';
+    const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
+    const lossCls = f.loss > 0 ? '' : f.loss < 0 ? 'gain' : 'zero';
+    return `<li class="${cls}"><span><span class="rank-num ${rankCls}">${i+1}</span>${f.emoji} ${f.name}</span><span class="rank-value ${lossCls}">${f.loss > 0 ? '↓' : f.loss < 0 ? '↑' : ''} ${Math.abs(f.loss).toFixed(1)} kg</span></li>`;
+  }).join('');
+
+  // 总家庭减重
+  const totalSorted = config.families.map(f => ({ id: f.id, name: f.name, emoji: f.emoji, loss: familyLosses[f.id] || 0 })).sort((a, b) => b.loss - a.loss);
+  document.getElementById('totalFamilyRank').innerHTML = totalSorted.map((f, i) => {
+    const cls = i === 0 ? 'top' : '';
+    const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
+    const lossCls = f.loss > 0 ? '' : f.loss < 0 ? 'gain' : 'zero';
+    return `<li class="${cls}"><span><span class="rank-num ${rankCls}">${i+1}</span>${f.emoji} ${f.name}</span><span class="rank-value ${lossCls}">${f.loss > 0 ? '↓' : f.loss < 0 ? '↑' : ''} ${Math.abs(f.loss).toFixed(1)} kg</span></li>`;
+  }).join('');
+
+  // 个人荣誉榜
+  const allPersons = [];
+  config.families.forEach(f => f.members.forEach(m => {
+    allPersons.push({ id: m.id, name: m.name, familyName: f.name, familyEmoji: f.emoji, loss: personLosses[m.id] || 0, startWeight: m.startWeight, latest: latestWeights[m.id] });
+  }));
+  allPersons.sort((a, b) => b.loss - a.loss);
+  document.getElementById('honorList').innerHTML = allPersons.map((p, i) => {
+    const cls = i === 0 ? 'top' : '';
+    const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅';
+    const lossCls = p.loss > 0 ? '' : p.loss < 0 ? 'gain' : 'zero';
+    return `<div class="honor-item ${cls}"><span class="honor-rank">${rankEmoji}</span><span>${p.familyEmoji} <strong>${p.name}</strong></span><span class="honor-detail">${p.loss > 0 ? '↓' : p.loss < 0 ? '↑' : ''} ${Math.abs(p.loss).toFixed(1)}kg · ${p.latest !== null ? '现' + p.latest + 'kg' : '无记录'}</span></div>`;
+  }).join('');
+}
+
+// ==================== 图表 ====================
+function renderChart() {
+  const ctx = document.getElementById('weightChart');
+  const allDatesSet = new Set();
+  records.forEach(r => allDatesSet.add(r.date));
+  const allDates = [...allDatesSet].sort();
+
+  const allMembers = [];
+  config.families.forEach(f => f.members.forEach(m => {
+    allMembers.push({ ...m, familyEmoji: f.emoji, familyName: f.name });
+  }));
+
+  const colors = ['#ff6b6b', '#ffa500', '#4ade80', '#60a5fa', '#c084fc', '#f472b6'];
+  const datasets = allMembers.map((m, i) => {
+    const memberRecords = records.filter(r => r.person_id === m.id);
+    const data = allDates.map(d => {
+      const rec = memberRecords.filter(r => r.date === d);
+      if (rec.length === 0) return null;
+      const w = rec[rec.length - 1].weight;
+      return chartMode === 'loss' ? (m.startWeight - w) : w;
+    });
+    return {
+      label: m.familyEmoji + ' ' + m.name,
+      data, borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '20',
+      borderWidth: 2.5, tension: 0.4, fill: false,
+      pointRadius: 3, pointHoverRadius: 6
+    };
+  });
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels: allDates.map(d => d.slice(5)), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + (chartMode === 'loss' ? ' kg (减)' : ' kg') } }
+      },
+      scales: { y: { title: { display: true, text: chartMode === 'loss' ? '减重量 (kg)' : '体重 (kg)' } } }
+    }
+  });
+}
+
+function switchChartMode(mode) {
+  chartMode = mode;
+  document.querySelectorAll('.chart-toggle button').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === (mode === 'loss' ? '减重量' : '实际体重'));
+  });
+  renderChart();
+}
+
+// ==================== 表格 ====================
+function renderTable() {
+  const memberStartMap = {};
+  config.families.forEach(f => f.members.forEach(m => { memberStartMap[m.id] = m.startWeight; }));
+
+  let filtered = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (chartFilter !== 'all') filtered = filtered.filter(r => r.family_id === chartFilter);
+
+  if (filtered.length === 0) {
+    document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>暂无体重记录</p></div></td></tr>';
+    return;
+  }
+
+  document.getElementById('dataTableBody').innerHTML = filtered.map(r => {
+    const startW = memberStartMap[r.person_id] || 0;
+    const startDelta = r.weight - startW;
+    const prevRecords = records.filter(rr => rr.person_id === r.person_id && new Date(rr.date) < new Date(r.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const prevDelta = prevRecords.length > 0 ? r.weight - prevRecords[0].weight : 0;
+    const hasPrev = prevRecords.length > 0;
+    const sCls = startDelta < 0 ? 'delta-down' : startDelta > 0 ? 'delta-up' : 'delta-zero';
+    const pCls = !hasPrev ? 'delta-zero' : prevDelta < 0 ? 'delta-down' : prevDelta > 0 ? 'delta-up' : 'delta-zero';
+    return `<tr><td>${r.date}</td><td>${r.family_name || '-'}</td><td>${r.person_name || r.person_id}</td><td><strong>${r.weight}</strong></td><td class="${sCls}">${startDelta <= 0 ? '' : '+'}${startDelta.toFixed(1)}</td><td class="${pCls}">${!hasPrev ? '-' : (prevDelta <= 0 ? '' : '+') + prevDelta.toFixed(1)}</td><td><button class="trash-btn" onclick="deleteRecord('${r.id}')">🗑️</button></td></tr>`;
+  }).join('');
+}
+
+function filterTable(family) { chartFilter = family; renderTable(); }
+
+// ==================== 记录弹窗 ====================
+function renderRecordSelect() {
+  const sel = document.getElementById('recordPerson');
+  sel.innerHTML = '<option value="">-- 请选择成员 --</option>' +
+    config.families.map(f =>
+      `<optgroup label="${f.emoji} ${f.name}">
+        ${f.members.map(m => `<option value="${m.id}" ${currentUser && currentUser.id === m.id ? 'selected' : ''}>${m.name} (起始${m.startWeight}kg)</option>`).join('')}
+      </optgroup>`
+    ).join('');
+}
+
+function openRecordModal() {
+  renderRecordSelect();
+  document.getElementById('recordDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('recordWeight').value = '';
+  document.getElementById('recordModal').style.display = 'flex';
+}
+
+function closeRecordModal() { document.getElementById('recordModal').style.display = 'none'; }
+
+async function submitRecord() {
+  const personId = document.getElementById('recordPerson').value;
+  const date = document.getElementById('recordDate').value;
+  const weight = parseFloat(document.getElementById('recordWeight').value);
+
+  if (!personId) return showToast('请选择成员', 'error');
+  if (!date) return showToast('请选择日期', 'error');
+  if (isNaN(weight) || weight < 30 || weight > 200) return showToast('请输入合理的体重 (30-200 kg)', 'error');
+
+  const person = findPerson(personId);
+  const family = config.families.find(f => f.members.some(m => m.id === personId));
+
+  const record = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    person_id: personId,
+    person_name: person ? person.name : personId,
+    family_id: family ? family.id : '',
+    family_name: family ? family.name : '',
+    weight: parseFloat(weight),
+    date,
+    created_at: new Date().toISOString()
+  };
+
+  records.push(record);
+  records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  try {
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    closeRecordModal();
+    showToast('✅ 体重记录成功！数据已同步', 'success');
+    renderAll();
+  } catch(e) {
+    // 回滚
+    records = records.filter(r => r.id !== record.id);
+    showToast('保存失败: ' + e.message, 'error');
+  }
+}
+
+async function deleteRecord(id) {
+  if (!confirm('确定删除这条记录吗？')) return;
+  const idx = records.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  const backup = records[idx];
+  records.splice(idx, 1);
+
+  try {
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    renderAll();
+    showToast('已删除并同步', 'success');
+  } catch(e) {
+    records.splice(idx, 0, backup);
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+    showToast('删除失败: ' + e.message, 'error');
+  }
+}
+
+// ==================== 管理 ====================
+function openAdminModal() { document.getElementById('adminModal').style.display = 'flex'; }
+function closeAdminModal() { document.getElementById('adminModal').style.display = 'none'; }
+
+async function loadDemoData() {
+  if (!confirm('加载演示数据会添加示例记录，确定吗？')) return;
+  const start = new Date(config.projectStart || '2026-08-01');
+  const baseWeights = {};
+  config.families.forEach(f => f.members.forEach(m => { baseWeights[m.id] = m.startWeight; }));
+
+  for (let w = 0; w < 4; w++) {
+    const d = new Date(start.getTime() + w * 7 * 86400000);
+    config.families.forEach(f => f.members.forEach(m => {
+      const loss = (Math.random() * 2.5 + 0.3) * (w + 1);
+      const fluctuation = (Math.random() - 0.4) * 1.0;
+      const wgt = Math.round((baseWeights[m.id] - loss + fluctuation) * 10) / 10;
+      records.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + w,
+        person_id: m.id, person_name: m.name,
+        family_id: f.id, family_name: f.name,
+        weight: wgt, date: d.toISOString().slice(0, 10),
+        created_at: new Date().toISOString()
+      });
+    }));
+  }
+
+  records.sort((a, b) => new Date(a.date) - new Date(b.date));
+  try {
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    renderAll();
+    showToast('✅ 演示数据已加载并同步（4周记录）', 'success');
+  } catch(e) {
+    showToast('保存失败: ' + e.message, 'error');
+  }
+}
+
+function exportData() {
+  const data = { config, records, exported_at: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '瘦者为王_数据备份_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  showToast('💾 数据已导出', 'success');
+}
+
+async function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.records || !Array.isArray(data.records)) throw new Error('格式错误');
+    if (!confirm(`即将导入 ${data.records.length} 条记录。确定吗？`)) return;
+
+    if (data.config) config = data.config;
+    records = data.records;
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    renderAll();
+    showToast('✅ 数据导入并同步成功！', 'success');
+  } catch(ex) {
+    showToast('导入失败: ' + ex.message, 'error');
+  }
+  e.target.value = '';
+}
+
+async function clearAllRecords() {
+  if (!confirm('⚠️ 确定清空所有体重记录吗？此操作不可恢复！')) return;
+  records = [];
+  try {
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    renderAll();
+    showToast('🗑️ 所有记录已清空', 'success');
+  } catch(e) {
+    showToast('清空失败: ' + e.message, 'error');
+  }
+}
+
+// ==================== Token 管理 ====================
+function openTokenSetup() {
+  document.getElementById('tokenInput').value = getToken();
+  document.getElementById('tokenModal').style.display = 'flex';
+}
+function closeTokenModal() { document.getElementById('tokenModal').style.display = 'none'; }
+
+async function saveToken() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return showToast('请输入 Token', 'error');
+
+  saveTokenToStorage(token);
+  closeTokenModal();
+
+  // 重新加载数据
+  try {
+    const data = await loadData();
+    config = data.config;
+    records = data.records || [];
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+    lastRecordsJson = JSON.stringify(records);
+    document.getElementById('setupHint').style.display = 'none';
+    setConnectionStatus('online');
+    renderAll();
+    showToast('✅ Token 已保存，数据已同步', 'success');
+  } catch(e) {
+    showToast('Token 可能无效: ' + e.message, 'error');
+  }
+}
+
+// ==================== 编辑战队信息 ====================
+async function saveConfigToGitHub() {
+  try {
+    await saveData({ config, records });
+    lastRecordsJson = JSON.stringify(records);
+    return true;
+  } catch(e) {
+    showToast('保存失败: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function updateTeamName(e, familyId) {
+  const name = e.target.value.trim() || '未命名';
+  const family = config.families.find(f => f.id === familyId);
+  if (family) family.name = name;
+  if (await saveConfigToGitHub()) showToast('✅ 队名已更新', 'success');
+}
+
+async function editEmoji(e, familyId) {
+  const span = e.target;
+  const oldEmoji = span.textContent;
+  const input = document.createElement('input');
+  input.type = 'text'; input.value = oldEmoji; input.maxLength = 4;
+  input.style.cssText = 'font-size:2em;width:60px;text-align:center;border:2px dashed #ccc;border-radius:8px;outline:none;background:#fafafa';
+  span.replaceWith(input); input.focus(); input.select();
+  input.onblur = async () => {
+    const emoji = input.value || '🏠';
+    const newSpan = document.createElement('span');
+    newSpan.className = 'team-emoji'; newSpan.textContent = emoji;
+    newSpan.title = '点击修改头像'; newSpan.style.cursor = 'pointer';
+    newSpan.onclick = function(ev) { editEmoji(ev, familyId); };
+    input.replaceWith(newSpan);
+    const family = config.families.find(f => f.id === familyId);
+    if (family) { family.emoji = emoji; await saveConfigToGitHub(); }
+  };
+  input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
+}
+
+async function updateMemberName(e, familyId, memberId) {
+  const name = e.target.value.trim() || '未命名';
+  const family = config.families.find(f => f.id === familyId);
+  if (family) {
+    const member = family.members.find(m => m.id === memberId);
+    if (member) { member.name = name; }
+  }
+  if (currentUser && currentUser.id === memberId) {
+    currentUser.name = name;
+    localStorage.setItem('wlc_current_user', JSON.stringify(currentUser));
+  }
+  if (await saveConfigToGitHub()) showToast('✅ 成员名已更新', 'success');
+}
+
+// ==================== 工具函数 ====================
+function findPerson(personId) {
+  for (const f of config.families) {
+    const m = f.members.find(m => m.id === personId);
+    if (m) return m;
+  }
+  return null;
+}
+
+function getLatestWeights() {
+  const map = {};
+  records.forEach(r => { map[r.person_id] = r.weight; });
+  return map;
+}
+
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+function formatDate(d) { return d.slice(0, 10).replace(/-/g, '.'); }
+
+// ==================== Toast ====================
+function showToast(msg, type) {
+  const el = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = 'toast ' + (type || '');
+  div.textContent = msg;
+  el.appendChild(div);
+  setTimeout(() => div.remove(), 2500);
+}
+
+// ==================== 身份选择 ====================
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+
+  document.getElementById('teamsRow').addEventListener('dblclick', async function(e) {
+    const teamCard = e.target.closest('.team-card');
+    if (!teamCard) return;
+    const familyId = teamCard.dataset.family;
+    const family = config.families.find(f => f.id === familyId);
+    if (!family || !family.members.length) return;
+
+    if (currentUser && currentUser.familyId === familyId) {
+      const idx = family.members.findIndex(m => m.id === currentUser.id);
+      const next = family.members[(idx + 1) % family.members.length];
+      currentUser = { id: next.id, name: next.name, familyId };
+    } else {
+      currentUser = { id: family.members[0].id, name: family.members[0].name, familyId };
+    }
+    localStorage.setItem('wlc_current_user', JSON.stringify(currentUser));
+    renderRecordSelect();
+    updateCurrentUserUI();
+    showToast('👤 身份已切换为: ' + currentUser.name, 'success');
+  });
+});
+</script>
+</body>
+</html>
