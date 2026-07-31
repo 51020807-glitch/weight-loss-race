@@ -224,6 +224,18 @@ body {
 <div id="toastContainer"></div>
 
 <script>
+// ==================== 自动版本检测（强刷缓存） ====================
+var APP_VERSION = 5;
+(function() {
+  var stored = localStorage.getItem('wlc_app_version');
+  if (stored && parseInt(stored) !== APP_VERSION) {
+    localStorage.setItem('wlc_app_version', APP_VERSION);
+    location.reload(true);
+  } else {
+    localStorage.setItem('wlc_app_version', APP_VERSION);
+  }
+})();
+
 // ==================== 硬编码配置（所有中文写死在代码里，不经过 GitHub API） ====================
 var config = {
   projectStart: '2026-08-01',
