@@ -1,18 +1,57 @@
 {
   "config": {
     "families": [
-      {"id": "tiger", "name": "猛虎队", "emoji": "🐯", "members": [
-        {"id": "tiger1", "name": "大虎", "startWeight": 85},
-        {"id": "tiger2", "name": "小虎", "startWeight": 72}
-      ]},
-      {"id": "eagle", "name": "飞鹰队", "emoji": "🦥", "members": [
-        {"id": "eagle1", "name": "大鹰", "startWeight": 90},
-        {"id": "eagle2", "name": "小鹰", "startWeight": 68}
-      ]},
-      {"id": "panda", "name": "熈猫队", "emoji": "🐼", "members": [
-        {"id": "panda1", "name": "大凤猫", "startWeight": 78},
-        {"id": "panda2", "name": "小凤猫", "startWeight": 65}
-      ]}
+      {
+        "id": "tiger",
+        "name": "çèé",
+        "emoji": "🏠",
+        "members": [
+          {
+            "id": "tiger1",
+            "name": "å¤§è",
+            "startWeight": 85
+          },
+          {
+            "id": "tiger2",
+            "name": "å°è",
+            "startWeight": 72
+          }
+        ]
+      },
+      {
+        "id": "eagle",
+        "name": "é£é¹°é",
+        "emoji": "ð¦¥",
+        "members": [
+          {
+            "id": "eagle1",
+            "name": "å¤§é¹°",
+            "startWeight": 90
+          },
+          {
+            "id": "eagle2",
+            "name": "å°é¹°",
+            "startWeight": 68
+          }
+        ]
+      },
+      {
+        "id": "panda",
+        "name": "çç«é",
+        "emoji": "ð¼",
+        "members": [
+          {
+            "id": "panda1",
+            "name": "å¤§å¤ç«",
+            "startWeight": 78
+          },
+          {
+            "id": "panda2",
+            "name": "å°å¤ç«",
+            "startWeight": 65
+          }
+        ]
+      }
     ],
     "projectStart": "2026-08-01",
     "projectEnd": "2026-10-31"
