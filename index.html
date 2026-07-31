@@ -442,8 +442,7 @@ function renderTeams() {
     return (familyLosses[b.id] || 0) - (familyLosses[a.id] || 0);
   });
 
-  document.getElementById('teamsRow').innerHTML = config.families.map(function(f) {
-    var rankIdx = ranked.findIndex(function(r) { return r.id === f.id; });
+  document.getElementById('teamsRow').innerHTML = ranked.map(function(f, rankIdx) {
     var rankClass = rankIdx === 0 ? 'rank-1' : rankIdx === 1 ? 'rank-2' : rankIdx === 2 ? 'rank-3' : '';
     var loss = familyLosses[f.id] || 0;
 
